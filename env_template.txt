@@ -1,0 +1,16 @@
+# Crypto Trading Bot - Demo Mode Configuration
+# This bot operates in demo mode and doesn't require real API credentials
+
+# Demo Mode Settings
+# The bot automatically operates in demo mode with simulated trading
+# No API credentials are required
+
+# Optional: Logging level (DEBUG, INFO, WARNING, ERROR)
+# LOG_LEVEL=INFO
+
+# Optional: Demo mode settings
+# DEMO_STARTING_BALANCE=10000.00
+# DEMO_PRICE_VOLATILITY=0.02
+
+# Note: This bot simulates trading operations and doesn't connect to real exchanges
+# All market data, orders, and account information are simulated for educational purposes 
