@@ -7,58 +7,104 @@ This version is optimized for Vercel serverless deployment
 import os
 import sys
 import json
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import time
 from datetime import datetime
 
-# Add parent directory to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Get the base path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
 
-try:
-    from bot.basic_bot import BasicBot
-    from bot.order_handler import OrderHandler
-    BOT_AVAILABLE = True
-except ImportError:
-    BOT_AVAILABLE = False
+# Add parent directory to path for bot imports
+sys.path.insert(0, BASE_DIR)
 
-app = Flask(__name__, static_folder='.')
+# Initialize Flask app
+app = Flask(__name__)
 CORS(app)
 
 # Initialize bot only if available
-if BOT_AVAILABLE:
-    try:
-        bot = BasicBot()
-        order_handler = OrderHandler(bot.client)
-    except Exception as e:
-        print(f"Warning: Could not initialize bot: {e}")
-        BOT_AVAILABLE = False
+BOT_AVAILABLE = False
+try:
+    from bot.basic_bot import BasicBot
+    from bot.order_handler import OrderHandler
+    bot = BasicBot()
+    order_handler = OrderHandler(bot.client)
+    BOT_AVAILABLE = True
+except Exception as e:
+    print(f"Warning: Bot initialization skipped: {e}")
 
 # ===== FRONTEND ROUTES =====
 @app.route('/')
 def index():
     """Serve the main trading interface."""
-    return send_from_directory('.', 'index.html')
+    try:
+        if os.path.exists(os.path.join(FRONTEND_DIR, 'index.html')):
+            with open(os.path.join(FRONTEND_DIR, 'index.html'), 'r', encoding='utf-8') as f:
+                return f.read()
+        else:
+            return jsonify({'error': 'index.html not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/signin')
 def signin():
     """Serve the signin page."""
-    return send_from_directory('.', 'signin.html')
+    try:
+        if os.path.exists(os.path.join(FRONTEND_DIR, 'signin.html')):
+            with open(os.path.join(FRONTEND_DIR, 'signin.html'), 'r', encoding='utf-8') as f:
+                return f.read()
+        else:
+            return jsonify({'error': 'signin.html not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/signup')
 def signup():
     """Serve the signup page."""
-    return send_from_directory('.', 'signup.html')
+    try:
+        if os.path.exists(os.path.join(FRONTEND_DIR, 'signup.html')):
+            with open(os.path.join(FRONTEND_DIR, 'signup.html'), 'r', encoding='utf-8') as f:
+                return f.read()
+        else:
+            return jsonify({'error': 'signup.html not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/profile')
 def profile():
     """Serve the profile page."""
-    return send_from_directory('.', 'profile.html')
+    try:
+        if os.path.exists(os.path.join(FRONTEND_DIR, 'profile.html')):
+            with open(os.path.join(FRONTEND_DIR, 'profile.html'), 'r', encoding='utf-8') as f:
+                return f.read()
+        else:
+            return jsonify({'error': 'profile.html not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/<path:filename>')
 def serve_static(filename):
-    """Serve static files."""
-    return send_from_directory('.', filename)
+    """Serve static files from frontend directory."""
+    try:
+        file_path = os.path.join(FRONTEND_DIR, filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': f'{filename} not found'}), 404
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Set appropriate content type
+        if filename.endswith('.css'):
+            return content, 200, {'Content-Type': 'text/css'}
+        elif filename.endswith('.js'):
+            return content, 200, {'Content-Type': 'application/javascript'}
+        elif filename.endswith('.json'):
+            return content, 200, {'Content-Type': 'application/json'}
+        else:
+            return content, 200, {'Content-Type': 'text/plain'}
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # ===== API ROUTES =====
 @app.route('/api/status')
