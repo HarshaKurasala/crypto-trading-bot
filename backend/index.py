@@ -18,6 +18,25 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 # Bot status
 BOT_AVAILABLE = False
 
+# ===== ROOT ROUTE =====
+
+@app.route('/')
+def root():
+    """Root endpoint - returns API info."""
+    return jsonify({
+        'name': 'Crypto Trading Bot API',
+        'version': '1.0.0',
+        'status': 'running',
+        'endpoints': [
+            '/api/status',
+            '/api/symbols',
+            '/api/price/<symbol>',
+            '/api/orders',
+            '/api/trades/<symbol>',
+            '/api/account'
+        ]
+    })
+
 # ===== API ROUTES =====
 
 @app.route('/api/status')
@@ -177,12 +196,20 @@ def export_data():
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
-    return jsonify({'error': 'Not found'}), 404
+    return jsonify({
+        'error': 'Not found',
+        'path': request.path,
+        'method': request.method,
+        'message': 'Endpoint does not exist. Try /api/status or / for available endpoints'
+    }), 404
 
 @app.errorhandler(500)
 def server_error(error):
     """Handle 500 errors."""
-    return jsonify({'error': 'Internal server error'}), 500
+    return jsonify({
+        'error': 'Internal server error',
+        'details': str(error)
+    }), 500
 
 if __name__ == '__main__':
     # For local development
