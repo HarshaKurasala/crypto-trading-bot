@@ -1,6 +1,6 @@
-# �� Crypto Trading Bot (Demo Mode)
+# 🚀 Crypto Trading Bot - Full Stack
 
-A comprehensive Python-based cryptocurrency trading bot with simulated trading functionality, advanced order types, real-time market data simulation, and a beautiful CLI interface.
+A professional-grade cryptocurrency trading bot with a modern web interface and Python backend, deployed on Vercel.
 
 ## 📋 Table of Contents
 
