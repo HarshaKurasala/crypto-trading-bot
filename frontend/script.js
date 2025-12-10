@@ -38,11 +38,19 @@ class TradingInterface {
     this.history = [];
     this.priceData = {};
     
+    // Smooth price transitions
+    this.currentDisplayPrice = 0;
+    this.targetPrice = 0;
+    this.priceTransitionSpeed = 0.15; // Speed of price smoothing (0-1)
+    this.lastChartAddTime = 0;
+    this.minChartUpdateInterval = 1000; // Minimum milliseconds between chart updates
+    
     // Timers
     this.priceUpdateInterval = null;
     this.timeUpdateInterval = null;
     this.tradesUpdateInterval = null;
     this.ordersUpdateInterval = null;
+    this.chartSmoothingInterval = null;
     
     this.init();
   }
@@ -139,10 +147,14 @@ class TradingInterface {
     // ===== TRADING PANEL =====
     document.getElementById('symbolSelect')?.addEventListener('change', (e) => {
       this.currentSymbol = e.target.value;
+      // Reset momentum for new symbol
+      this.priceMomentum = 0;
+      this.momentumDirection = Math.random() > 0.5 ? 1 : -1;
+      this.lastChartAddTime = 0; // Reset chart timing for smooth transition
       // Update the symbol display name (e.g., "BTC/USDT")
       this.updateSymbolDisplay();
-      // Load new symbol data
-      this.loadSymbolData();
+      // Load new symbol data with smooth animation
+      this.loadSymbolDataSmooth();
       // Reload chart for new symbol
       this.updateChartForTimeframe();
     });
@@ -446,11 +458,38 @@ class TradingInterface {
       
       const data = await response.json();
       this.priceData = data;
+      this.targetPrice = data.current_price || data.price || 0;
       this.updatePriceDisplay(data);
     } catch (error) {
       console.error('Price fetch error:', error);
-      // Use demo data as fallback
-      this.updatePriceDisplay(this.getDemoData(this.currentSymbol));
+      const demoData = this.getDemoData(this.currentSymbol);
+      this.priceData = demoData;
+      this.targetPrice = demoData.price || 0;
+      this.updatePriceDisplay(demoData);
+    }
+  }
+
+  async loadSymbolDataSmooth() {
+    // Load new symbol data with smooth price transition
+    try {
+      const response = await fetch(getApiUrl(`/api/price/${this.currentSymbol}`));
+      if (!response.ok) throw new Error('Failed to fetch price');
+      
+      const data = await response.json();
+      this.priceData = data;
+      const newPrice = data.current_price || data.price || 0;
+      // Set target price for smooth transition
+      this.targetPrice = newPrice;
+      this.currentDisplayPrice = newPrice;
+      this.updatePriceDisplay(data);
+    } catch (error) {
+      console.error('Price fetch error:', error);
+      const demoData = this.getDemoData(this.currentSymbol);
+      this.priceData = demoData;
+      const newPrice = demoData.price || 0;
+      this.targetPrice = newPrice;
+      this.currentDisplayPrice = newPrice;
+      this.updatePriceDisplay(demoData);
     }
   }
 
@@ -649,28 +688,41 @@ class TradingInterface {
         volatility = 600;
     }
 
-    // Generate realistic candlestick data with proper trending and volatility
-    let trendDirection = Math.random() > 0.5 ? 1 : -1; // Random market direction
+    // Generate realistic candlestick data with smooth trending and gradual changes
+    let trendDirection = Math.random() > 0.5 ? 1 : -1; // Random initial market direction
     let lastPrice = basePrice;
+    let trendStrength = Math.random() * 0.00015; // Random trend strength
     
     dataValues = Array.from({length: labels.length}, (_, i) => {
-      // Realistic trend (0.02% to 0.05% per candle)
-      const trendFactor = trendDirection * (0.0002 + Math.random() * 0.0003);
+      // Smooth, gradual trend that persists across multiple candles
+      // Trend slowly strengthens/weakens for natural waves
+      const trendFactor = trendDirection * (0.00008 + trendStrength + Math.random() * 0.00005);
       
-      // Volatility cluster (sudden changes followed by mean reversion)
-      const volatilityFactor = Math.random() < 0.1 ? (Math.random() - 0.5) * volatility * 0.02 : (Math.random() - 0.5) * volatility * 0.005;
+      // Volatility clustering with smooth transitions
+      const volatilityFactor = Math.random() < 0.08 
+        ? (Math.random() - 0.5) * volatility * 0.008  // 8% chance of larger move
+        : (Math.random() - 0.5) * volatility * 0.003;  // Normal small moves
       
-      // Calculate price with momentum (prices tend to continue in same direction)
-      const momentum = (Math.random() - 0.3) * volatility * 0.01; // Bias towards continuation
+      // Momentum effect (prices continue in direction more often)
+      const momentum = Math.random() < 0.6 
+        ? (Math.random() - 0.3) * volatility * 0.005  // 60% chance of continuation
+        : (Math.random() - 0.5) * volatility * 0.004;  // 40% chance of reversal
       
+      // Apply all components for smooth, realistic price movement
       lastPrice = lastPrice * (1 + trendFactor + volatilityFactor + momentum);
       
-      // Occasionally reverse trend (realistic market behavior)
+      // Gradually adjust trend strength (creates wave-like patterns)
+      if (i % 8 === 0) { // Change trend strength periodically
+        trendStrength = Math.max(-0.00015, Math.min(0.00015, trendStrength + (Math.random() - 0.5) * 0.00005));
+      }
+      
+      // Occasionally reverse trend (5% chance - slow, smooth reversals)
       if (Math.random() < 0.05) {
         trendDirection *= -1;
       }
       
-      return Math.max(basePrice * 0.9, lastPrice); // Prevent prices from falling too much
+      // Protect from extreme drops (realistic minimum floor)
+      return Math.max(basePrice * 0.85, lastPrice);
     });
 
     return { labels, data: dataValues };
@@ -871,12 +923,20 @@ class TradingInterface {
       this.connectToBot();
     }, 5000);
     
-    // Price updates every 1 second for real-time changes
+    // Price updates every 1 second for real-time API data
     this.priceUpdateInterval = setInterval(() => {
       this.loadSymbolData();
-      // Also update chart data every second to show new candlesticks
-      this.updateChartWithNewData();
     }, 1000);
+
+    // Smooth chart updates with realistic timing
+    // Checks every 500ms if enough time has passed to add new candle (realistic feel)
+    this.chartSmoothingInterval = setInterval(() => {
+      const now = Date.now();
+      if (now - this.lastChartAddTime >= this.minChartUpdateInterval) {
+        this.updateChartWithNewData();
+        this.lastChartAddTime = now;
+      }
+    }, 500);
 
     // Orders updates every 3s
     this.ordersUpdateInterval = setInterval(() => {
@@ -890,10 +950,13 @@ class TradingInterface {
   }
 
   updateChartWithNewData() {
-    // Add new data point to chart every second with realistic momentum-based trending
+    // Add new data point to chart with realistic momentum-based trending
     if (window.priceChart && window.priceChart.data && window.priceChart.data.datasets) {
       const currentData = window.priceChart.data.datasets[0].data;
-      const currentPrice = parseFloat(document.getElementById('currentPrice')?.textContent?.replace(/[$,]/g, '') || 52340.50);
+      if (!currentData || currentData.length === 0) return;
+      
+      // Use target price from latest API call for consistent chart updates
+      const currentPrice = this.targetPrice || parseFloat(document.getElementById('currentPrice')?.textContent?.replace(/[$,]/g, '') || 52340.50);
       
       // Initialize momentum tracking for this symbol if not exists
       if (!this.priceMomentum) {
@@ -901,41 +964,43 @@ class TradingInterface {
         this.momentumDirection = Math.random() > 0.5 ? 1 : -1;
       }
       
-      // Shift labels left and add new time
+      // Shift labels left and add new time (realistic time-based labels)
       const now = new Date();
       const newLabel = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
       
       window.priceChart.data.labels.shift();
       window.priceChart.data.labels.push(newLabel);
       
-      // Realistic price movement with momentum (trend-following)
-      // Small trend component (±0.01% per candle)
-      const trendFactor = this.momentumDirection * (0.0001 + Math.random() * 0.00005);
+      // Realistic price movement with momentum (trend-following behavior)
+      // Smaller trend component (±0.008% per candle - slower, more realistic movement)
+      const trendFactor = this.momentumDirection * (0.00008 + Math.random() * 0.00002);
       
-      // Volatility with clustering (occasional bigger moves, mostly small ones)
-      const volatilityFactor = Math.random() < 0.08 
-        ? (Math.random() - 0.5) * 0.0015  // 8% chance of larger move (±0.15%)
-        : (Math.random() - 0.5) * 0.0003;  // Normal moves (±0.015%)
+      // Volatility with clustering (realistic market behavior)
+      const volatilityFactor = Math.random() < 0.06 
+        ? (Math.random() - 0.5) * 0.0012  // 6% chance of larger move (±0.12%)
+        : (Math.random() - 0.5) * 0.0002;  // Normal moves (±0.01%)
 
-      // Momentum effect (70% chance to continue direction, 30% to reverse/neutral)
-      if (Math.random() < 0.7) {
-        this.priceMomentum = Math.max(-0.0005, Math.min(0.0005, this.priceMomentum + (Math.random() - 0.5) * 0.00005));
+      // Momentum effect (75% chance to continue direction - more realistic persistence)
+      if (Math.random() < 0.75) {
+        // Gradually increase/decrease momentum for smooth trending
+        this.priceMomentum = Math.max(-0.0004, Math.min(0.0004, this.priceMomentum + (Math.random() - 0.5) * 0.00003));
       } else {
-        this.priceMomentum *= -0.3; // Partial reversal
-        if (Math.random() < 0.3) {
-          this.momentumDirection *= -1; // Occasionally reverse trend
+        this.priceMomentum *= -0.4; // Partial reversal
+        // Occasionally reverse trend (5% chance - rare reversals)
+        if (Math.random() < 0.05) {
+          this.momentumDirection *= -1; 
         }
       }
 
-      // Calculate new price with all components
+      // Calculate new price with all components (slower, more gradual changes)
       const newPrice = currentPrice * (1 + trendFactor + volatilityFactor + this.priceMomentum);
       
       // Shift data left and add new price
       currentData.shift();
       currentData.push(newPrice);
       
-      // Update chart
-      window.priceChart.update('none'); // Update without animation for smooth real-time feel
+      // Update chart without animation for smooth real-time feel
+      window.priceChart.update('none');
       
       // Update price display to match the latest chart data
       this.updatePriceDisplayFromChart(newPrice, currentData);
