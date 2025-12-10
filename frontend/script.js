@@ -48,7 +48,7 @@ class TradingInterface {
     // Market regime tracking for diverse price flows
     this.marketRegime = 'trending'; // 'trending', 'consolidating', 'volatile', 'recovery'
     this.regimeChangeCounter = 0;
-    this.regimeChangeFrequency = Math.floor(Math.random() * 15) + 20; // Change every 20-35 updates
+    this.regimeChangeFrequency = Math.floor(Math.random() * 8) + 8; // Change every 8-15 updates (much faster)
     this.volatilityMultiplier = 1.0;
     this.momentumStrength = 1.0;
     
@@ -695,49 +695,51 @@ class TradingInterface {
         volatility = 600;
     }
 
-    // Generate realistic candlestick data with varied flows and dynamic patterns
+    // Generate realistic candlestick data with highly varied flows and dynamic patterns
     let trendDirection = Math.random() > 0.5 ? 1 : -1; // Random initial market direction
     let lastPrice = basePrice;
-    let trendStrength = Math.random() * 0.0002; // Random trend strength (varied)
+    let trendStrength = (Math.random() - 0.5) * 0.0004; // Much larger variation (-0.0002 to +0.0002)
     let volatilityPhase = Math.random() * Math.PI * 2; // Wave-like volatility patterns
+    let volatilityIntensity = Math.random() * 2.5 + 0.5; // 0.5 to 3.0 intensity
+    let reversalFrequency = Math.random() * 0.12 + 0.02; // 2% to 14% trend reversal
     
     dataValues = Array.from({length: labels.length}, (_, i) => {
-      // Create wave-like patterns for dynamic volatility changes
-      const volatilityWave = Math.sin(volatilityPhase + i * 0.3) * 0.5 + 0.5; // 0 to 1
+      // Create strong wave-like patterns for highly dynamic volatility changes
+      const volatilityWave = Math.sin(volatilityPhase + i * (0.2 + Math.random() * 0.3)) * 0.5 + 0.5; // 0 to 1
       
-      // Varied trend factors based on position in cycle
-      const cyclePosition = (i % 12) / 12; // 12-candle cycles
-      const adaptiveTrend = Math.sin(cyclePosition * Math.PI) * 0.15; // Varies strength
-      const trendFactor = trendDirection * (0.00008 + trendStrength * adaptiveTrend + Math.random() * 0.00008);
+      // Highly varied trend factors based on position in cycle
+      const cyclePosition = (i % 8) / 8; // Shorter 8-candle cycles (vs 12)
+      const adaptiveTrend = Math.sin(cyclePosition * Math.PI * 2) * 0.25; // Much stronger variation (±25%)
+      const trendFactor = trendDirection * (0.0001 + trendStrength + adaptiveTrend * 0.0003 + Math.random() * 0.00015);
       
-      // Volatility clustering with wave variation
-      const baseVolatility = volatility * (0.5 + volatilityWave);
-      const volatilityFactor = Math.random() < (0.08 + volatilityWave * 0.08)
-        ? (Math.random() - 0.5) * baseVolatility * (0.006 + volatilityWave * 0.006)  // Larger moves
-        : (Math.random() - 0.5) * baseVolatility * (0.002 + volatilityWave * 0.002);  // Normal moves
+      // Much more aggressive volatility with intensity variation
+      const baseVolatility = volatility * volatilityIntensity * (0.3 + volatilityWave);
+      const volatilityFactor = Math.random() < (0.12 + volatilityWave * 0.18)
+        ? (Math.random() - 0.5) * baseVolatility * (0.008 + volatilityWave * 0.012)  // Much larger moves
+        : (Math.random() - 0.5) * baseVolatility * (0.004 + volatilityWave * 0.006);  // Larger normal moves
       
-      // Dynamic momentum with varied persistence
-      const momentumPersistence = 0.5 + volatilityWave * 0.3; // Varies 0.5 to 0.8
+      // Highly varied momentum with strong persistence changes
+      const momentumPersistence = 0.35 + volatilityWave * 0.5; // Varies 0.35 to 0.85
       const momentum = Math.random() < momentumPersistence
-        ? (Math.random() - 0.3) * baseVolatility * (0.004 + volatilityWave * 0.004)  // Continuation
-        : (Math.random() - 0.5) * baseVolatility * (0.005 + volatilityWave * 0.003);  // Reversal
+        ? (Math.random() - 0.3) * baseVolatility * (0.008 + volatilityWave * 0.006)  // Strong continuation
+        : (Math.random() - 0.5) * baseVolatility * (0.010 + volatilityWave * 0.008);  // Strong reversal
       
-      // Apply all components with adaptive behavior
+      // Apply all components with much higher variation
       lastPrice = lastPrice * (1 + trendFactor + volatilityFactor * 0.0001 + momentum * 0.0001);
       
-      // Gradually adjust trend strength with varied rates
-      if (i % Math.floor(Math.random() * 5 + 5) === 0) { // Varied frequency
-        const changeAmount = (Math.random() - 0.5) * 0.00008;
-        trendStrength = Math.max(-0.0002, Math.min(0.0002, trendStrength + changeAmount));
+      // Adjust trend strength more frequently and with larger changes
+      if (i % Math.floor(Math.random() * 3 + 2) === 0) { // Very frequent changes
+        const changeAmount = (Math.random() - 0.5) * 0.00012; // Larger step changes
+        trendStrength = Math.max(-0.0003, Math.min(0.0003, trendStrength + changeAmount));
       }
       
-      // Trend reversals at varied intervals
-      if (Math.random() < (0.02 + volatilityWave * 0.08)) { // 2-10% chance
+      // Frequent trend reversals at varied intervals
+      if (Math.random() < reversalFrequency) { // 2-14% chance per candle
         trendDirection *= -1;
       }
       
-      // Protect from extreme moves (realistic minimum floor)
-      return Math.max(basePrice * 0.80, Math.min(basePrice * 1.25, lastPrice));
+      // Allow wider price ranges (more dynamic)
+      return Math.max(basePrice * 0.70, Math.min(basePrice * 1.35, lastPrice));
     });
 
     return { labels, data: dataValues };
@@ -979,15 +981,21 @@ class TradingInterface {
         this.momentumDirection = Math.random() > 0.5 ? 1 : -1;
       }
       
-      // Track and change market regime periodically for varied flows
+      // Track and change market regime very frequently for constant varied flows
       this.regimeChangeCounter++;
       if (this.regimeChangeCounter >= this.regimeChangeFrequency) {
         this.regimeChangeCounter = 0;
-        this.regimeChangeFrequency = Math.floor(Math.random() * 15) + 20;
+        this.regimeChangeFrequency = Math.floor(Math.random() * 8) + 8; // Even faster changes (8-15)
         const regimes = ['trending', 'consolidating', 'volatile', 'recovery'];
-        this.marketRegime = regimes[Math.floor(Math.random() * regimes.length)];
-        this.volatilityMultiplier = Math.random() * 0.8 + 0.6; // 0.6 to 1.4
-        this.momentumStrength = Math.random() * 0.6 + 0.7; // 0.7 to 1.3
+        const previousRegime = this.marketRegime;
+        // Ensure different regime than previous
+        let newRegime = regimes[Math.floor(Math.random() * regimes.length)];
+        while (newRegime === previousRegime && regimes.length > 1) {
+          newRegime = regimes[Math.floor(Math.random() * regimes.length)];
+        }
+        this.marketRegime = newRegime;
+        this.volatilityMultiplier = Math.random() * 1.5 + 0.4; // 0.4 to 1.9 (wider range)
+        this.momentumStrength = Math.random() * 1.0 + 0.5; // 0.5 to 1.5 (wider range)
       }
       
       // Shift labels left and add new time (realistic time-based labels)
@@ -997,50 +1005,50 @@ class TradingInterface {
       window.priceChart.data.labels.shift();
       window.priceChart.data.labels.push(newLabel);
       
-      // Vary price movement based on market regime
+      // Vary price movement based on market regime with MUCH stronger differences
       let trendFactor, volatilityFactor, momentumEffect;
       
       switch(this.marketRegime) {
         case 'trending':
-          // Strong directional movement with consistent momentum
-          trendFactor = this.momentumDirection * (0.00012 + Math.random() * 0.00008) * this.momentumStrength;
-          volatilityFactor = Math.random() < 0.04 
-            ? (Math.random() - 0.5) * 0.0008 * this.volatilityMultiplier
-            : (Math.random() - 0.5) * 0.0001 * this.volatilityMultiplier;
-          momentumEffect = 0.8; // 80% chance of continuation
+          // VERY strong directional movement
+          trendFactor = this.momentumDirection * (0.00018 + Math.random() * 0.00014) * this.momentumStrength;
+          volatilityFactor = Math.random() < 0.03 
+            ? (Math.random() - 0.5) * 0.0006 * this.volatilityMultiplier
+            : (Math.random() - 0.5) * 0.00008 * this.volatilityMultiplier;
+          momentumEffect = 0.85; // Strong 85% continuation
           break;
           
         case 'consolidating':
-          // Tight range movement, minimal volatility, mean reversion
-          trendFactor = this.momentumDirection * (0.00002 + Math.random() * 0.00001) * this.momentumStrength;
-          volatilityFactor = (Math.random() - 0.5) * 0.00005 * this.volatilityMultiplier;
-          momentumEffect = 0.5; // 50% chance of continuation, higher reversal
+          // VERY tight range, almost no volatility
+          trendFactor = this.momentumDirection * (0.00001 + Math.random() * 0.000005) * this.momentumStrength;
+          volatilityFactor = (Math.random() - 0.5) * 0.00002 * this.volatilityMultiplier;
+          momentumEffect = 0.35; // Low 35% continuation, frequent reversals
           break;
           
         case 'volatile':
-          // Large swings, high volatility, frequent reversals
-          trendFactor = this.momentumDirection * (0.00006 + Math.random() * 0.00004) * this.momentumStrength;
-          volatilityFactor = Math.random() < 0.15 
-            ? (Math.random() - 0.5) * 0.0025 * this.volatilityMultiplier
-            : (Math.random() - 0.5) * 0.0008 * this.volatilityMultiplier;
-          momentumEffect = 0.6; // 60% chance of continuation
+          // EXTREME swings and large moves
+          trendFactor = this.momentumDirection * (0.00008 + Math.random() * 0.00008) * this.momentumStrength;
+          volatilityFactor = Math.random() < 0.20 
+            ? (Math.random() - 0.5) * 0.004 * this.volatilityMultiplier
+            : (Math.random() - 0.5) * 0.0015 * this.volatilityMultiplier;
+          momentumEffect = 0.50; // 50% continuation, frequent changes
           break;
           
         case 'recovery':
-          // Counter-trend movement, gradual reversal
-          trendFactor = this.momentumDirection * -1 * (0.00008 + Math.random() * 0.00006) * this.momentumStrength;
-          volatilityFactor = Math.random() < 0.12 
-            ? (Math.random() - 0.5) * 0.0015 * this.volatilityMultiplier
-            : (Math.random() - 0.5) * 0.0003 * this.volatilityMultiplier;
-          momentumEffect = 0.55; // 55% chance of continuation
+          // Strong counter-trend movement
+          trendFactor = this.momentumDirection * -1 * (0.00015 + Math.random() * 0.00012) * this.momentumStrength;
+          volatilityFactor = Math.random() < 0.18 
+            ? (Math.random() - 0.5) * 0.0028 * this.volatilityMultiplier
+            : (Math.random() - 0.5) * 0.0008 * this.volatilityMultiplier;
+          momentumEffect = 0.45; // 45% continuation
           break;
           
         default:
-          trendFactor = this.momentumDirection * (0.00008 + Math.random() * 0.00002);
-          volatilityFactor = Math.random() < 0.06 
-            ? (Math.random() - 0.5) * 0.0012
-            : (Math.random() - 0.5) * 0.0002;
-          momentumEffect = 0.75;
+          trendFactor = this.momentumDirection * (0.00012 + Math.random() * 0.00008);
+          volatilityFactor = Math.random() < 0.10 
+            ? (Math.random() - 0.5) * 0.0020
+            : (Math.random() - 0.5) * 0.0004;
+          momentumEffect = 0.70;
       }
 
       // Apply momentum effect with varied persistence
