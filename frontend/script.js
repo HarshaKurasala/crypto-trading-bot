@@ -794,23 +794,21 @@ class TradingInterface {
     this.isConnected = connected;
     const statusDot = document.getElementById('connectionStatus');
     const statusText = document.getElementById('connectionText');
+    const connectionStatus = document.querySelector('.connection-status');
 
-    console.log('Setting connected status:', connected);
-    
     if (statusDot) {
-      if (connected) {
-        statusDot.classList.add('connected');
-        statusDot.classList.remove('disconnected');
-      } else {
-        statusDot.classList.remove('connected');
-        statusDot.classList.add('disconnected');
-      }
-      console.log('Status dot classes:', statusDot.className);
+      statusDot.classList.toggle('connected', connected);
+      console.log(`Status dot updated: ${connected ? 'Connected (cyan)' : 'Disconnected (red)'}`);
     }
     
     if (statusText) {
       statusText.textContent = connected ? 'Connected' : 'Disconnected';
-      statusText.style.color = connected ? 'var(--primary)' : 'var(--danger)';
+      statusText.style.color = connected ? 'var(--primary)' : '#ef4444';
+      console.log(`Status text: ${statusText.textContent}`);
+    }
+    
+    if (connectionStatus) {
+      connectionStatus.style.borderColor = connected ? 'rgba(6,182,212,0.3)' : 'rgba(239,68,68,0.3)';
     }
   }
 
