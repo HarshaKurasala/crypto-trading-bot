@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoBot Pro – Trading Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <i class="fas fa-rocket"></i>
+                <span>CryptoBot Pro</span>
+            </div>
+            <div class="connection-status">
+                <span class="status-dot" id="connectionStatus"></span>
+                <span id="connectionText">Connecting...</span>
+            </div>
+        </div>
+        
+        <div class="header-center">
+            <div class="time-display" id="currentTime"></div>
+        </div>
+        
+        <div class="header-right">
+            <button class="btn-secondary" id="toggleRightSidebar" title="Toggle Right Panel (Account & History)">
+                <i class="fas fa-bars"></i>
+            </button>
+            <button class="btn-secondary" id="settingsBtn" title="Settings">
+                <i class="fas fa-cog"></i>
+            </button>
+            <button class="btn-secondary" id="accountMenuBtn" title="Account">
+                <i class="fas fa-user-circle"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Account Dropdown -->
+    <div class="account-dropdown" id="accountDropdown">
+        <div class="dropdown-header">
+            <i class="fas fa-user-circle"></i>
+            <span>Demo User</span>
+        </div>
+        <button class="dropdown-item" id="accountProfileBtn">
+            <i class="fas fa-id-card"></i>
+            <span>Profile</span>
+        </button>
+        <button class="dropdown-item" id="accountSettingsBtn">
+            <i class="fas fa-sliders-h"></i>
+            <span>Settings</span>
+        </button>
+        <button class="dropdown-item" id="accountApiBtn">
+            <i class="fas fa-key"></i>
+            <span>API Keys</span>
+        </button>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item" id="accountLogoutBtn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Left Sidebar: Trading Orders -->
+        <aside class="sidebar-left" id="sidebarLeft">
+            <div class="panel order-builder-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-rocket"></i> Order Builder</h3>
+                    <span class="order-type-badge" id="orderTypeBadge">MARKET</span>
+                </div>
+
+                <!-- Symbol Selection -->
+                <div class="form-group">
+                    <label><i class="fas fa-coins"></i> Trading Pair</label>
+                    <select id="symbolSelect" class="form-control symbol-select">
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="ETHUSDT">ETH/USDT</option>
+                        <option value="BNBUSDT">BNB/USDT</option>
+                        <option value="SOLUSDT">SOL/USDT</option>
+                        <option value="ADAUSDT">ADA/USDT</option>
+                    </select>
+                </div>
+
+                <!-- Order Type Selector -->
+                <div class="form-group order-type-group">
+                    <label><i class="fas fa-exchange-alt"></i> Order Type</label>
+                    <div class="order-type-tabs">
+                        <button class="tab-btn active" data-type="MARKET">
+                            <i class="fas fa-bolt"></i> Market
+                        </button>
+                        <button class="tab-btn" data-type="LIMIT">
+                            <i class="fas fa-hourglass-half"></i> Limit
+                        </button>
+                        <button class="tab-btn" data-type="STOP_LIMIT">
+                            <i class="fas fa-pause-circle"></i> Stop
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Buy/Sell Selector -->
+                <div class="form-group side-selector-group">
+                    <label><i class="fas fa-arrow-right-arrow-left"></i> Direction</label>
+                    <div class="side-buttons">
+                        <button class="side-btn buy-btn active" data-side="BUY">
+                            <i class="fas fa-arrow-trend-up"></i>
+                            <span>BUY</span>
+                        </button>
+                        <button class="side-btn sell-btn" data-side="SELL">
+                            <i class="fas fa-arrow-trend-down"></i>
+                            <span>SELL</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quantity -->
+                <div class="form-group">
+                    <div class="label-with-hint">
+                        <label><i class="fas fa-weight"></i> Quantity</label>
+                        <span class="hint">BTC</span>
+                    </div>
+                    <div class="input-with-buttons">
+                        <input type="number" id="quantityInput" class="form-control" placeholder="0.00" step="0.001">
+                        <div class="quantity-buttons">
+                            <button class="qty-btn" data-value="0.001" title="0.001 BTC">0.001</button>
+                            <button class="qty-btn" data-value="0.01" title="0.01 BTC">0.01</button>
+                            <button class="qty-btn" data-value="0.1" title="0.1 BTC">0.1</button>
+                            <button class="qty-btn" data-value="1" title="1 BTC">1</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price (for Limit/Stop orders) -->
+                <div class="form-group" id="priceGroup" style="display: none;">
+                    <div class="label-with-hint">
+                        <label><i class="fas fa-tag"></i> Price</label>
+                        <span class="hint">USDT</span>
+                    </div>
+                    <input type="number" id="priceInput" class="form-control" placeholder="0.00" step="0.01">
+                </div>
+
+                <!-- Stop Price (for Stop Limit orders) -->
+                <div class="form-group" id="stopPriceGroup" style="display: none;">
+                    <div class="label-with-hint">
+                        <label><i class="fas fa-stopwatch"></i> Stop Price</label>
+                        <span class="hint">USDT</span>
+                    </div>
+                    <input type="number" id="stopPriceInput" class="form-control" placeholder="0.00" step="0.01">
+                </div>
+
+                <!-- Order Summary -->
+                <div class="order-summary-box">
+                    <div class="summary-row">
+                        <div class="summary-label">Est. Value</div>
+                        <div class="summary-value" id="estimatedValue">$0.00</div>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-row">
+                        <div class="summary-label">Trading Fee</div>
+                        <div class="summary-value-fee" id="estimatedFee">$0.00</div>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-row total">
+                        <div class="summary-label">Total Cost</div>
+                        <div class="summary-value-total" id="totalCost">$0.00</div>
+                    </div>
+                </div>
+
+                <!-- Place Order Button -->
+                <button class="btn-place-order" id="placeOrderBtn">
+                    <i class="fas fa-check-circle"></i> Place Order
+                </button>
+            </div>
+
+            <!-- Open Orders Summary -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-list"></i> Open Orders</h3>
+                </div>
+                <div class="orders-list" id="ordersList" style="max-height: 200px; overflow: auto;">
+                    <!-- Orders populated by JS -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center: Chart & Analysis -->
+        <section class="center-content">
+            <!-- Price Header -->
+            <div class="price-display">
+                <div class="price-main">
+                    <span class="symbol-name" id="currentSymbol">BTC/USDT</span>
+                    <span class="current-price" id="currentPrice">$50,000.00</span>
+                    <span class="price-change" id="priceChange">+2.5%</span>
+                </div>
+                <div class="price-details">
+                    <div class="detail-item">
+                        <span>24h High:</span>
+                        <span id="high24h">$51,200.00</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>24h Low:</span>
+                        <span id="low24h">$48,800.00</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>24h Volume:</span>
+                        <span id="volume24h">1.2M BTC</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <div class="chart-controls-left">
+                        <div class="segmented-controls" id="chartSegmentedControls">
+                            <button class="segment-btn active" data-panel="timeframes">
+                                <i class="fas fa-hourglass-half"></i> Timeframe
+                            </button>
+                            <button class="segment-btn" data-panel="indicators">
+                                <i class="fas fa-sliders-h"></i> Indicators
+                            </button>
+                            <button class="segment-btn" data-panel="settings">
+                                <i class="fas fa-cog"></i> Settings
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-controls-right">
+                        <button class="btn-secondary btn-sm" id="fullscreenBtn" title="Fullscreen">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="chart-control-panel" id="chartControlPanel">
+                    <!-- Timeframes -->
+                    <div class="panel-content active" data-panel="timeframes">
+                        <div class="control-row">
+                            <h4>Chart Timeframe</h4>
+                            <div class="filter-options">
+                                <button class="filter-option" data-type="timeframe" data-value="1m">1m</button>
+                                <button class="filter-option" data-type="timeframe" data-value="5m">5m</button>
+                                <button class="filter-option" data-type="timeframe" data-value="15m">15m</button>
+                                <button class="filter-option active" data-type="timeframe" data-value="1h">1h</button>
+                                <button class="filter-option" data-type="timeframe" data-value="4h">4h</button>
+                                <button class="filter-option" data-type="timeframe" data-value="1d">1d</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Indicators -->
+                    <div class="panel-content" data-panel="indicators" style="display: none;">
+                        <div class="control-row">
+                            <h4>Technical Indicators</h4>
+                            <div class="indicator-toggles">
+                                <button class="indicator-toggle" data-indicator="sma">SMA</button>
+                                <button class="indicator-toggle" data-indicator="ema">EMA</button>
+                                <button class="indicator-toggle" data-indicator="rsi">RSI</button>
+                                <button class="indicator-toggle" data-indicator="macd">MACD</button>
+                                <button class="indicator-toggle" data-indicator="bollinger">BB</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="panel-content" data-panel="settings" style="display: none;">
+                        <div class="control-row">
+                            <h4>Indicator Settings</h4>
+                            <div class="settings-group">
+                                <div class="setting-item">
+                                    <label>SMA Period:</label>
+                                    <input type="number" id="smaPeriodInline" value="20" min="5" max="200">
+                                </div>
+                                <div class="setting-item">
+                                    <label>EMA Period:</label>
+                                    <input type="number" id="emaPeriodInline" value="20" min="5" max="200">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart Canvas -->
+                <div class="chart-area" id="chartArea">
+                    <canvas id="priceChart" width="800" height="400"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Trades -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-exchange-alt"></i> Recent Activity</h3>
+                    <button class="btn-secondary btn-sm" id="refreshTradesBtn">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="trades-list" id="tradesList" style="max-height: 180px; overflow: auto;">
+                    <!-- Trades populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Sidebar: Account & Portfolio -->
+        <aside class="sidebar-right" id="sidebarRight">
+            <!-- Account Balance -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-wallet"></i> Account</h3>
+                </div>
+                <div class="account-balance">
+                    <div class="balance-item">
+                        <span>Balance:</span>
+                        <strong id="totalBalance">$10,000.00</strong>
+                    </div>
+                    <div class="balance-item">
+                        <span>Available:</span>
+                        <strong id="availableBalance">$9,500.00</strong>
+                    </div>
+                    <div class="balance-item">
+                        <span>PnL:</span>
+                        <strong id="unrealizedPnl" class="positive">+$500.00</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trading History -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-history"></i> History</h3>
+                    <button class="btn-secondary btn-sm" id="refreshOrdersBtn">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="history-list" id="historyList" style="max-height: 220px; overflow: auto;">
+                    <!-- History populated by JS -->
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                </div>
+                <button class="btn-secondary" id="cancelAllOrdersBtn" style="width: 100%; margin-bottom: 8px;">
+                    <i class="fas fa-ban"></i> Cancel All Orders
+                </button>
+                <button class="btn-secondary" style="width: 100%; margin-bottom: 8px;">
+                    <i class="fas fa-door-open"></i> Close All Positions
+                </button>
+                <button class="btn-secondary" style="width: 100%;">
+                    <i class="fas fa-bell"></i> Price Alerts
+                </button>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="modal-close" id="closeSettingsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" class="form-control" placeholder="Enter API Key">
+                </div>
+                <div class="form-group">
+                    <label>API Secret</label>
+                    <input type="password" class="form-control" placeholder="Enter API Secret">
+                </div>
+                <div class="form-group">
+                    <label>Max Position Size (%)</label>
+                    <input type="number" class="form-control" placeholder="10" min="1" max="100">
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 16px;">
+                    <button class="btn-secondary" id="closeSettingsModalBtn" style="flex: 1;">Cancel</button>
+                    <button class="btn-primary" style="flex: 1;">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="notification-container" id="notificationContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Processing...</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
