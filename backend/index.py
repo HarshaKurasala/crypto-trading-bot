@@ -10,6 +10,7 @@ import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import time
+import random
 
 # App initialization
 app = Flask(__name__)
@@ -57,70 +58,90 @@ def get_symbols():
 
 @app.route('/api/price/<symbol>')
 def get_symbol_price(symbol):
-    """Get current price for a symbol."""
-    # Demo data for common symbols
+    """Get current price for a symbol with real-time fluctuations."""
+    # Base demo data for common symbols
     demo_prices = {
         'BTCUSDT': {
             'symbol': 'BTCUSDT',
-            'current_price': 52340.50,
+            'base_price': 52340.50,
             'bid_price': 52335.00,
             'ask_price': 52346.00,
             'high_24h': 53200.00,
             'low_24h': 50150.75,
             'volume_24h': '1.2M',
-            'price_change_24h': 1200.50,
-            'price_change_percent_24h': 2.50
+            'base_change': 1200.50,
+            'base_change_percent': 2.50
         },
         'ETHUSDT': {
             'symbol': 'ETHUSDT',
-            'current_price': 3145.80,
+            'base_price': 3145.80,
             'bid_price': 3143.50,
             'ask_price': 3148.10,
             'high_24h': 3220.00,
             'low_24h': 3080.50,
             'volume_24h': '2.5M',
-            'price_change_24h': 52.80,
-            'price_change_percent_24h': 1.75
+            'base_change': 52.80,
+            'base_change_percent': 1.75
         },
         'BNBUSDT': {
             'symbol': 'BNBUSDT',
-            'current_price': 625.40,
+            'base_price': 625.40,
             'bid_price': 624.50,
             'ask_price': 626.30,
             'high_24h': 645.00,
             'low_24h': 610.25,
             'volume_24h': '5M',
-            'price_change_24h': -5.60,
-            'price_change_percent_24h': -0.85
+            'base_change': -5.60,
+            'base_change_percent': -0.85
         },
         'SOLUSDT': {
             'symbol': 'SOLUSDT',
-            'current_price': 185.20,
+            'base_price': 185.20,
             'bid_price': 184.80,
             'ask_price': 185.60,
             'high_24h': 192.50,
             'low_24h': 178.75,
             'volume_24h': '10M',
-            'price_change_24h': 5.60,
-            'price_change_percent_24h': 3.20
+            'base_change': 5.60,
+            'base_change_percent': 3.20
         },
         'ADAUSDT': {
             'symbol': 'ADAUSDT',
-            'current_price': 1.02,
+            'base_price': 1.02,
             'bid_price': 1.01,
             'ask_price': 1.03,
             'high_24h': 1.08,
             'low_24h': 0.98,
             'volume_24h': '50M',
-            'price_change_24h': -0.02,
-            'price_change_percent_24h': -1.25
+            'base_change': -0.02,
+            'base_change_percent': -1.25
         }
     }
     
-    if symbol in demo_prices:
-        return jsonify(demo_prices[symbol])
+    if symbol not in demo_prices:
+        return jsonify({'error': 'Symbol not found'}), 404
     
-    return jsonify({'error': 'Symbol not found'}), 404
+    data = demo_prices[symbol].copy()
+    
+    # Add realistic price fluctuation (±0.5% of base price)
+    fluctuation_percent = random.uniform(-0.5, 0.5)
+    base_price = data['base_price']
+    price_change = base_price * (fluctuation_percent / 100)
+    current_price = base_price + price_change
+    
+    # Update prices with fluctuation
+    return jsonify({
+        'symbol': data['symbol'],
+        'current_price': round(current_price, 2),
+        'bid_price': round(current_price - 5, 2),
+        'ask_price': round(current_price + 5, 2),
+        'high_24h': data['high_24h'],
+        'low_24h': data['low_24h'],
+        'volume_24h': data['volume_24h'],
+        'price_change_24h': round(data['base_change'] + price_change, 2),
+        'price_change_percent_24h': round(data['base_change_percent'] + fluctuation_percent, 2),
+        'timestamp': int(time.time() * 1000)
+    })
 
 @app.route('/api/trades/<symbol>')
 def get_recent_trades(symbol):

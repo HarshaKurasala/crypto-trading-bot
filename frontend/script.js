@@ -818,10 +818,10 @@ class TradingInterface {
       this.connectToBot();
     }, 5000);
     
-    // Price updates every 2s
+    // Price updates every 1 second for real-time changes
     this.priceUpdateInterval = setInterval(() => {
       this.loadSymbolData();
-    }, 2000);
+    }, 1000);
 
     // Orders updates every 3s
     this.ordersUpdateInterval = setInterval(() => {
