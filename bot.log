@@ -1,0 +1,6 @@
+2025-09-07 18:26:00,413 - INFO - [32mSuccessfully connected to Demo API. Server time: {'serverTime': 1757249760413}[0m
+2025-09-07 18:26:00,414 - INFO - [32mDemo mode enabled - All operations are simulated[0m
+2025-09-07 18:26:00,415 - INFO - [32mAvailable operations: Market data, price info, symbol info, simulated trading[0m
+2025-09-07 18:26:01,120 - INFO - [32mSuccessfully connected to Demo API. Server time: {'serverTime': 1757249761120}[0m
+2025-09-07 18:26:01,121 - INFO - [32mDemo mode enabled - All operations are simulated[0m
+2025-09-07 18:26:01,122 - INFO - [32mAvailable operations: Market data, price info, symbol info, simulated trading[0m
