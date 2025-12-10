@@ -858,7 +858,7 @@ class TradingInterface {
   }
 
   updateChartWithNewData() {
-    // Add new data point to chart every second
+    // Add new data point to chart every second and update price display
     if (window.priceChart && window.priceChart.data && window.priceChart.data.datasets) {
       const currentData = window.priceChart.data.datasets[0].data;
       const currentPrice = parseFloat(document.getElementById('currentPrice')?.textContent?.replace(/[$,]/g, '') || 52340.50);
@@ -873,10 +873,60 @@ class TradingInterface {
       // Shift data left and add new price with slight variation
       currentData.shift();
       const variation = (Math.random() - 0.5) * currentPrice * 0.005; // ±0.25% variation
-      currentData.push(currentPrice + variation);
+      const newPrice = currentPrice + variation;
+      currentData.push(newPrice);
       
       // Update chart
       window.priceChart.update('none'); // Update without animation for smooth real-time feel
+      
+      // Update price display to match the latest chart data
+      this.updatePriceDisplayFromChart(newPrice, currentData);
+    }
+  }
+
+  updatePriceDisplayFromChart(latestPrice, allChartData) {
+    // Update all price-related displays based on current chart data
+    const currentPrice = document.getElementById('currentPrice');
+    const priceChange = document.getElementById('priceChange');
+    const high24h = document.getElementById('high24h');
+    const low24h = document.getElementById('low24h');
+    
+    // Format numbers with commas
+    const formatPrice = (num) => {
+      return parseFloat(num).toLocaleString('en-US', { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2 
+      });
+    };
+
+    // Get the first price (reference point for percentage change)
+    const referencePrice = allChartData.length > 0 ? allChartData[0] : latestPrice;
+    
+    // Calculate high and low from all chart data
+    const chartHigh = Math.max(...allChartData);
+    const chartLow = Math.min(...allChartData);
+    
+    // Calculate percentage change from reference price
+    const percentChange = ((latestPrice - referencePrice) / referencePrice) * 100;
+    
+    // Update current price
+    if (currentPrice) {
+      currentPrice.textContent = `$${formatPrice(latestPrice)}`;
+    }
+    
+    // Update percentage change with color
+    if (priceChange) {
+      priceChange.textContent = `${percentChange > 0 ? '+' : ''}${percentChange.toFixed(2)}%`;
+      priceChange.classList.toggle('negative', percentChange < 0);
+    }
+    
+    // Update 24h High/Low from chart
+    if (high24h) {
+      high24h.textContent = `$${formatPrice(chartHigh)}`;
+    }
+    
+    if (low24h) {
+      low24h.textContent = `$${formatPrice(chartLow)}`;
     }
   }
 
