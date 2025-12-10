@@ -123,8 +123,9 @@ def get_symbol_price(symbol):
     
     data = demo_prices[symbol].copy()
     
-    # Add realistic price fluctuation (±0.5% of base price)
-    fluctuation_percent = random.uniform(-0.5, 0.5)
+    # Realistic price fluctuation with small, trending movements (±0.02% per request)
+    # Much smaller than frontend to allow chart-based variations to show
+    fluctuation_percent = random.uniform(-0.02, 0.02)
     base_price = data['base_price']
     price_change = base_price * (fluctuation_percent / 100)
     current_price = base_price + price_change
