@@ -13,9 +13,19 @@ import time
 from datetime import datetime
 
 # App configuration
-FRONTEND_PATH = os.path.join(os.path.dirname(__file__), '..', 'frontend')
+# Determine frontend path - works in both local and Vercel environments
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(CURRENT_DIR)
+FRONTEND_PATH = os.path.join(PARENT_DIR, 'frontend')
+
+# Verify frontend path exists, fallback to parent if not
 if not os.path.exists(FRONTEND_PATH):
-    FRONTEND_PATH = os.path.join(os.path.dirname(__file__), '..')
+    FRONTEND_PATH = PARENT_DIR
+    print(f"Warning: frontend/ not found at {os.path.join(PARENT_DIR, 'frontend')}, using {FRONTEND_PATH}")
+
+print(f"Frontend path: {FRONTEND_PATH}")
+print(f"Frontend exists: {os.path.exists(FRONTEND_PATH)}")
+print(f"Contents: {os.listdir(FRONTEND_PATH) if os.path.exists(FRONTEND_PATH) else 'N/A'}")
 
 app = Flask(__name__, static_folder=FRONTEND_PATH, static_url_path='')
 CORS(app)
@@ -28,9 +38,18 @@ BOT_AVAILABLE = False
 def index():
     """Serve the main trading interface."""
     try:
+        index_path = os.path.join(FRONTEND_PATH, 'index.html')
+        if not os.path.exists(index_path):
+            return jsonify({
+                'error': 'index.html not found',
+                'path_checked': index_path,
+                'frontend_path': FRONTEND_PATH,
+                'exists': os.path.exists(FRONTEND_PATH),
+                'contents': os.listdir(FRONTEND_PATH) if os.path.exists(FRONTEND_PATH) else []
+            }), 404
         return send_from_directory(FRONTEND_PATH, 'index.html')
     except Exception as e:
-        return jsonify({'error': 'Frontend not available', 'details': str(e)}), 500
+        return jsonify({'error': 'Frontend not available', 'details': str(e), 'frontend_path': FRONTEND_PATH}), 500
 
 @app.route('/signin')
 def signin():
