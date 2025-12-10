@@ -1,13 +1,11 @@
 // ===== CRYPTO TRADING BOT - Enhanced Frontend =====
 
 // ===== BACKEND CONFIGURATION =====
-// Update this with your backend URL
+// This is set in index.html - update the window.BACKEND_URL there
 const BACKEND_CONFIG = {
-  // Change this to your backend Vercel URL when deployed
-  // Example: 'https://crypto-trading-bot-backend.vercel.app'
-  url: process.env.REACT_APP_BACKEND_URL || '/api',
-  // If empty, will use relative path '/api' (same domain)
-  // If set, will use absolute URL (separate backend)
+  // Get URL from window.BACKEND_URL (set in index.html)
+  // Falls back to same domain /api if not set
+  url: window.BACKEND_URL || '/api',
 };
 
 // Helper function to build API URLs
@@ -18,6 +16,7 @@ function getApiUrl(endpoint) {
   }
   return endpoint; // Use relative path for same-domain
 }
+
 
 class TradingInterface {
   constructor() {
@@ -762,12 +761,31 @@ class TradingInterface {
   // ===== CONNECTION & UPDATES =====
   async connectToBot() {
     try {
-      const response = await fetch(getApiUrl('/api/status'));
+      const url = getApiUrl('/api/status');
+      console.log('Connecting to backend at:', url);
+      console.log('Backend config:', BACKEND_CONFIG);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+      
       if (response.ok) {
         this.setConnected(true);
+        console.log('✅ Connected to backend successfully');
+      } else {
+        this.setConnected(false);
+        console.warn('❌ Backend returned error:', response.status);
       }
     } catch (error) {
-      console.error('Connection error:', error);
+      console.error('❌ Connection error:', error);
+      console.error('Error details:', error.message);
       this.setConnected(false);
     }
   }
