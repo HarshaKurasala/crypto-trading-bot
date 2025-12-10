@@ -652,94 +652,146 @@ class TradingInterface {
   }
 
   generateChartData(timeframe) {
-    // Generate realistic candlestick data based on timeframe
+    // Generate realistic candlestick data based on timeframe with unique behaviors
     let labels = [];
     let dataValues = [];
     const currentPrice = parseFloat(document.getElementById('currentPrice')?.textContent?.replace(/[$,]/g, '') || 52340.50);
     const basePrice = currentPrice;
+    
+    // Timeframe-specific parameters for unique price movement patterns
     let volatility = 500;
+    let trendPersistence = 0.65; // How much trends persist (0.3-0.8)
+    let reversalFrequency = 0.08; // Trend reversal probability
+    let volatilityIntensity = 1.0; // Overall volatility multiplier
+    let cycleLength = 8; // Length of price cycles
+    let trendStrengthRange = 0.0004; // Range of trend strength variation
 
     switch(timeframe) {
       case '1m':
-        // Last 60 minutes with 1-minute candles
+        // Last 60 minutes - FAST, CHOPPY, HIGH REVERSALS
         labels = Array.from({length: 60}, (_, i) => `${60-i}m ago`);
         volatility = 200;
+        trendPersistence = 0.35; // Low persistence (many reversals)
+        reversalFrequency = 0.18; // High reversal rate (18%)
+        volatilityIntensity = 2.2; // Very volatile
+        cycleLength = 5; // Short cycles
+        trendStrengthRange = 0.0002;
         break;
+        
       case '5m':
-        // Last 5 hours with 5-minute candles
+        // Last 5 hours - MODERATE ACTIVITY, FREQUENT CHANGES
         labels = Array.from({length: 60}, (_, i) => `${(60-i)*5}m ago`);
         volatility = 300;
+        trendPersistence = 0.45; // Moderate persistence
+        reversalFrequency = 0.12; // Moderate reversals (12%)
+        volatilityIntensity = 1.8; // High volatility
+        cycleLength = 6;
+        trendStrengthRange = 0.0003;
         break;
+        
       case '15m':
-        // Last 15 hours with 15-minute candles
+        // Last 15 hours - BALANCED MOVEMENT
         labels = Array.from({length: 60}, (_, i) => `${60-i}*15m`);
         volatility = 400;
+        trendPersistence = 0.55; // Balanced persistence
+        reversalFrequency = 0.08; // Moderate reversals (8%)
+        volatilityIntensity = 1.5; // Medium volatility
+        cycleLength = 8;
+        trendStrengthRange = 0.0004;
         break;
+        
       case '1h':
-        // Last 24 hours with 1-hour candles
+        // Last 24 hours - TRENDING, STEADY MOVEMENT
         labels = Array.from({length: 24}, (_, i) => `${24-i}h ago`);
         volatility = 600;
+        trendPersistence = 0.70; // High persistence
+        reversalFrequency = 0.05; // Low reversals (5%)
+        volatilityIntensity = 1.2; // Lower volatility
+        cycleLength = 10;
+        trendStrengthRange = 0.0005;
         break;
+        
       case '4h':
-        // Last 7 days with 4-hour candles
+        // Last 7 days - STRONG TRENDS, STABLE
         labels = Array.from({length: 42}, (_, i) => `${Math.floor((42-i)/6)}d ${((42-i)%6)*4}h`);
         volatility = 1000;
+        trendPersistence = 0.75; // Very high persistence
+        reversalFrequency = 0.03; // Very low reversals (3%)
+        volatilityIntensity = 0.9; // Low volatility
+        cycleLength = 12;
+        trendStrengthRange = 0.0006;
         break;
+        
       case '1d':
-        // Last 30 days with daily candles
+        // Last 30 days - VERY SMOOTH, LONG TRENDS
         labels = Array.from({length: 30}, (_, i) => `${30-i}d ago`);
         volatility = 1500;
+        trendPersistence = 0.80; // Extremely high persistence
+        reversalFrequency = 0.02; // Very rare reversals (2%)
+        volatilityIntensity = 0.7; // Very low volatility
+        cycleLength = 15;
+        trendStrengthRange = 0.0008;
         break;
+        
       default:
         labels = Array.from({length: 24}, (_, i) => `${24-i}h ago`);
         volatility = 600;
+        trendPersistence = 0.70;
+        reversalFrequency = 0.05;
+        volatilityIntensity = 1.2;
+        cycleLength = 10;
+        trendStrengthRange = 0.0005;
     }
 
-    // Generate realistic candlestick data with highly varied flows and dynamic patterns
-    let trendDirection = Math.random() > 0.5 ? 1 : -1; // Random initial market direction
+    // Generate realistic candlestick data with timeframe-specific behaviors
+    let trendDirection = Math.random() > 0.5 ? 1 : -1; // Random initial direction
     let lastPrice = basePrice;
-    let trendStrength = (Math.random() - 0.5) * 0.0004; // Much larger variation (-0.0002 to +0.0002)
-    let volatilityPhase = Math.random() * Math.PI * 2; // Wave-like volatility patterns
-    let volatilityIntensity = Math.random() * 2.5 + 0.5; // 0.5 to 3.0 intensity
-    let reversalFrequency = Math.random() * 0.12 + 0.02; // 2% to 14% trend reversal
+    let trendStrength = (Math.random() - 0.5) * trendStrengthRange; // Timeframe-specific range
+    let volatilityPhase = Math.random() * Math.PI * 2;
+    let reversalCounter = 0;
     
     dataValues = Array.from({length: labels.length}, (_, i) => {
-      // Create strong wave-like patterns for highly dynamic volatility changes
-      const volatilityWave = Math.sin(volatilityPhase + i * (0.2 + Math.random() * 0.3)) * 0.5 + 0.5; // 0 to 1
+      // Create wave patterns with timeframe-specific cycle length
+      const volatilityWave = Math.sin(volatilityPhase + i * (0.15 + Math.random() * 0.2)) * 0.5 + 0.5;
       
-      // Highly varied trend factors based on position in cycle
-      const cyclePosition = (i % 8) / 8; // Shorter 8-candle cycles (vs 12)
-      const adaptiveTrend = Math.sin(cyclePosition * Math.PI * 2) * 0.25; // Much stronger variation (±25%)
-      const trendFactor = trendDirection * (0.0001 + trendStrength + adaptiveTrend * 0.0003 + Math.random() * 0.00015);
+      // Adaptive trend based on timeframe-specific cycle
+      const cyclePosition = (i % cycleLength) / cycleLength;
+      const adaptiveTrend = Math.sin(cyclePosition * Math.PI * 2) * (0.15 + (1 - trendPersistence) * 0.3); // More volatile for low persistence
+      const trendFactor = trendDirection * (0.00008 + trendStrength + adaptiveTrend * 0.0003 + Math.random() * 0.0001);
       
-      // Much more aggressive volatility with intensity variation
+      // Volatility with timeframe-specific intensity
       const baseVolatility = volatility * volatilityIntensity * (0.3 + volatilityWave);
-      const volatilityFactor = Math.random() < (0.12 + volatilityWave * 0.18)
-        ? (Math.random() - 0.5) * baseVolatility * (0.008 + volatilityWave * 0.012)  // Much larger moves
-        : (Math.random() - 0.5) * baseVolatility * (0.004 + volatilityWave * 0.006);  // Larger normal moves
+      const volatilityThreshold = 0.08 + (1 - trendPersistence) * 0.25; // Higher volatility for choppy timeframes
+      const volatilityFactor = Math.random() < volatilityThreshold
+        ? (Math.random() - 0.5) * baseVolatility * (0.008 + volatilityWave * 0.012)
+        : (Math.random() - 0.5) * baseVolatility * (0.003 + volatilityWave * 0.005);
       
-      // Highly varied momentum with strong persistence changes
-      const momentumPersistence = 0.35 + volatilityWave * 0.5; // Varies 0.35 to 0.85
+      // Momentum with timeframe-specific persistence
+      const momentumPersistence = trendPersistence + (Math.random() - 0.5) * 0.15;
       const momentum = Math.random() < momentumPersistence
-        ? (Math.random() - 0.3) * baseVolatility * (0.008 + volatilityWave * 0.006)  // Strong continuation
-        : (Math.random() - 0.5) * baseVolatility * (0.010 + volatilityWave * 0.008);  // Strong reversal
+        ? (Math.random() - 0.3) * baseVolatility * (0.006 + volatilityWave * 0.004)
+        : (Math.random() - 0.5) * baseVolatility * (0.008 + volatilityWave * 0.006);
       
-      // Apply all components with much higher variation
+      // Apply movement
       lastPrice = lastPrice * (1 + trendFactor + volatilityFactor * 0.0001 + momentum * 0.0001);
       
-      // Adjust trend strength more frequently and with larger changes
-      if (i % Math.floor(Math.random() * 3 + 2) === 0) { // Very frequent changes
-        const changeAmount = (Math.random() - 0.5) * 0.00012; // Larger step changes
-        trendStrength = Math.max(-0.0003, Math.min(0.0003, trendStrength + changeAmount));
+      // Adjust trend strength with timeframe-specific frequency
+      const adjustmentFrequency = timeframe === '1m' ? 1 : (timeframe === '5m' ? 2 : (timeframe === '15m' ? 3 : 4));
+      if (i % adjustmentFrequency === 0) {
+        const changeAmount = (Math.random() - 0.5) * (trendStrengthRange * 0.8);
+        trendStrength = Math.max(-trendStrengthRange, Math.min(trendStrengthRange, trendStrength + changeAmount));
       }
       
-      // Frequent trend reversals at varied intervals
-      if (Math.random() < reversalFrequency) { // 2-14% chance per candle
+      // Timeframe-specific trend reversals
+      reversalCounter++;
+      if (reversalCounter > (20 * (1 - reversalFrequency)) && Math.random() < reversalFrequency) {
         trendDirection *= -1;
+        reversalCounter = 0;
       }
       
-      // Allow wider price ranges (more dynamic)
-      return Math.max(basePrice * 0.70, Math.min(basePrice * 1.35, lastPrice));
+      // Price bounds (wider for longer timeframes)
+      const priceRange = 0.3 + (trendPersistence * 0.2);
+      return Math.max(basePrice * (1 - priceRange), Math.min(basePrice * (1 + priceRange), lastPrice));
     });
 
     return { labels, data: dataValues };
