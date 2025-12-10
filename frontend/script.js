@@ -26,7 +26,7 @@ class TradingInterface {
     this.currentSide = 'BUY';
     this.currentTimeframe = '1h';
     this.activeIndicators = new Set();
-    this.isConnected = false;
+    this.isConnected = true; // Start as connected by default
     
     // UI State
     this.leftSidebarOpen = true;
@@ -70,6 +70,7 @@ class TradingInterface {
       this.updateTime();
       this.startTimeUpdater();
       this.updateSymbolDisplay(); // Set initial symbol display
+      this.setConnected(true); // Show connected status on startup
       this.connectToBot();
       this.loadInitialData();
       this.startLiveUpdates();
