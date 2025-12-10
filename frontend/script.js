@@ -469,8 +469,8 @@ class TradingInterface {
     // Handle both backend and demo data formats
     const price = data.current_price || data.price || 0;
     const change = data.price_change_percent_24h || data.change || 0;
-    const high = data.high_24h || data.high24h || 0;
-    const low = data.low_24h || data.low24h || 0;
+    let high = data.high_24h || data.high24h || 0;
+    let low = data.low_24h || data.low24h || 0;
     const volume = data.volume_24h || data.volume24h || '0';
 
     // Format numbers with commas for thousands
@@ -480,6 +480,15 @@ class TradingInterface {
         maximumFractionDigits: 2 
       });
     };
+
+    // Calculate high/low from chart data if available
+    if (window.priceChart && window.priceChart.data && window.priceChart.data.datasets[0]) {
+      const chartData = window.priceChart.data.datasets[0].data;
+      if (chartData && chartData.length > 0) {
+        high = Math.max(...chartData);
+        low = Math.min(...chartData);
+      }
+    }
 
     if (currentPrice) currentPrice.textContent = `$${formatPrice(price)}`;
     if (priceChange) {
@@ -582,51 +591,55 @@ class TradingInterface {
   }
 
   generateChartData(timeframe) {
-    // Generate data based on timeframe
+    // Generate realistic candlestick data based on timeframe
     let labels = [];
     let dataValues = [];
-    const basePrice = 48000;
+    const currentPrice = parseFloat(document.getElementById('currentPrice')?.textContent?.replace(/[$,]/g, '') || 52340.50);
+    const basePrice = currentPrice;
+    let volatility = 500;
 
     switch(timeframe) {
       case '1m':
-        // Last 60 minutes
-        labels = Array.from({length: 60}, (_, i) => `${i}m`);
-        dataValues = Array.from({length: 60}, () => basePrice + (Math.random() - 0.5) * 500);
+        // Last 60 minutes with 1-minute candles
+        labels = Array.from({length: 60}, (_, i) => `${60-i}m ago`);
+        volatility = 200;
         break;
       case '5m':
-        // Last 5 hours (5 min candles)
-        labels = Array.from({length: 60}, (_, i) => `${i * 5}m`);
-        dataValues = Array.from({length: 60}, () => basePrice + (Math.random() - 0.5) * 800);
+        // Last 5 hours with 5-minute candles
+        labels = Array.from({length: 60}, (_, i) => `${(60-i)*5}m ago`);
+        volatility = 300;
         break;
       case '15m':
-        // Last 15 hours
-        labels = Array.from({length: 60}, (_, i) => `${i * 15}m`);
-        dataValues = Array.from({length: 60}, () => basePrice + (Math.random() - 0.5) * 1000);
+        // Last 15 hours with 15-minute candles
+        labels = Array.from({length: 60}, (_, i) => `${60-i}*15m`);
+        volatility = 400;
         break;
       case '1h':
-        // Last 24 hours
-        labels = Array.from({length: 24}, (_, i) => `${i}:00`);
-        dataValues = Array.from({length: 24}, () => basePrice + (Math.random() - 0.5) * 1500);
+        // Last 24 hours with 1-hour candles
+        labels = Array.from({length: 24}, (_, i) => `${24-i}h ago`);
+        volatility = 600;
         break;
       case '4h':
-        // Last 7 days (4h candles)
-        labels = Array.from({length: 42}, (_, i) => `Day ${Math.floor(i/6)} ${(i%6)*4}h`);
-        dataValues = Array.from({length: 42}, () => basePrice + (Math.random() - 0.5) * 2000);
+        // Last 7 days with 4-hour candles
+        labels = Array.from({length: 42}, (_, i) => `${Math.floor((42-i)/6)}d ${((42-i)%6)*4}h`);
+        volatility = 1000;
         break;
       case '1d':
-        // Last 30 days
-        labels = Array.from({length: 30}, (_, i) => `Day ${i + 1}`);
-        dataValues = Array.from({length: 30}, () => basePrice + (Math.random() - 0.5) * 2500);
-        break;
-      case '1w':
-        // Last 52 weeks
-        labels = Array.from({length: 52}, (_, i) => `Week ${i + 1}`);
-        dataValues = Array.from({length: 52}, () => basePrice + (Math.random() - 0.5) * 3000);
+        // Last 30 days with daily candles
+        labels = Array.from({length: 30}, (_, i) => `${30-i}d ago`);
+        volatility = 1500;
         break;
       default:
-        labels = Array.from({length: 24}, (_, i) => `${i}:00`);
-        dataValues = Array.from({length: 24}, () => basePrice + (Math.random() - 0.5) * 1500);
+        labels = Array.from({length: 24}, (_, i) => `${24-i}h ago`);
+        volatility = 600;
     }
+
+    // Generate data with trending movement
+    dataValues = Array.from({length: labels.length}, (_, i) => {
+      const trendFactor = (i / labels.length) * 0.02; // Slight trend
+      const noise = (Math.random() - 0.5) * volatility;
+      return basePrice * (1 + trendFactor) + noise;
+    });
 
     return { labels, data: dataValues };
   }
@@ -829,6 +842,8 @@ class TradingInterface {
     // Price updates every 1 second for real-time changes
     this.priceUpdateInterval = setInterval(() => {
       this.loadSymbolData();
+      // Also update chart data every second to show new candlesticks
+      this.updateChartWithNewData();
     }, 1000);
 
     // Orders updates every 3s
@@ -840,6 +855,29 @@ class TradingInterface {
     this.tradesUpdateInterval = setInterval(() => {
       this.loadRecentTrades();
     }, 4000);
+  }
+
+  updateChartWithNewData() {
+    // Add new data point to chart every second
+    if (window.priceChart && window.priceChart.data && window.priceChart.data.datasets) {
+      const currentData = window.priceChart.data.datasets[0].data;
+      const currentPrice = parseFloat(document.getElementById('currentPrice')?.textContent?.replace(/[$,]/g, '') || 52340.50);
+      
+      // Shift labels left and add new time
+      const now = new Date();
+      const newLabel = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+      
+      window.priceChart.data.labels.shift();
+      window.priceChart.data.labels.push(newLabel);
+      
+      // Shift data left and add new price with slight variation
+      currentData.shift();
+      const variation = (Math.random() - 0.5) * currentPrice * 0.005; // ±0.25% variation
+      currentData.push(currentPrice + variation);
+      
+      // Update chart
+      window.priceChart.update('none'); // Update without animation for smooth real-time feel
+    }
   }
 
   startTimeUpdater() {
