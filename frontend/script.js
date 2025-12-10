@@ -54,6 +54,7 @@ class TradingInterface {
       this.setupEventListeners();
       this.updateTime();
       this.startTimeUpdater();
+      this.updateSymbolDisplay(); // Set initial symbol display
       this.connectToBot();
       this.loadInitialData();
       this.startLiveUpdates();
@@ -138,7 +139,12 @@ class TradingInterface {
     // ===== TRADING PANEL =====
     document.getElementById('symbolSelect')?.addEventListener('change', (e) => {
       this.currentSymbol = e.target.value;
+      // Update the symbol display name (e.g., "BTC/USDT")
+      this.updateSymbolDisplay();
+      // Load new symbol data
       this.loadSymbolData();
+      // Reload chart for new symbol
+      this.updateChartForTimeframe();
     });
 
     // Order type tabs
@@ -498,6 +504,15 @@ class TradingInterface {
     if (high24h) high24h.textContent = `$${formatPrice(high)}`;
     if (low24h) low24h.textContent = `$${formatPrice(low)}`;
     if (volume24h) volume24h.textContent = `${volume} ${this.currentSymbol.replace('USDT', '')}`;
+  }
+
+  updateSymbolDisplay() {
+    // Update the symbol name in the header (e.g., "BTC/USDT")
+    const symbolName = document.getElementById('currentSymbol');
+    if (symbolName) {
+      const baseSymbol = this.currentSymbol.replace('USDT', '');
+      symbolName.textContent = `${baseSymbol}/USDT`;
+    }
   }
 
   async loadOpenOrders() {
