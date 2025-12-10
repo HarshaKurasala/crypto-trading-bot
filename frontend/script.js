@@ -793,14 +793,24 @@ class TradingInterface {
   setConnected(connected) {
     this.isConnected = connected;
     const statusDot = document.getElementById('connectionStatus');
-    const statusText = document.querySelector('#connectionText') || 
-                      document.createElement('span');
+    const statusText = document.getElementById('connectionText');
 
+    console.log('Setting connected status:', connected);
+    
     if (statusDot) {
-      statusDot.classList.toggle('connected', connected);
+      if (connected) {
+        statusDot.classList.add('connected');
+        statusDot.classList.remove('disconnected');
+      } else {
+        statusDot.classList.remove('connected');
+        statusDot.classList.add('disconnected');
+      }
+      console.log('Status dot classes:', statusDot.className);
     }
+    
     if (statusText) {
       statusText.textContent = connected ? 'Connected' : 'Disconnected';
+      statusText.style.color = connected ? 'var(--primary)' : 'var(--danger)';
     }
   }
 
