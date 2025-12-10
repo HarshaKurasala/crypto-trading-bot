@@ -743,54 +743,54 @@ class TradingInterface {
         trendStrengthRange = 0.0005;
     }
 
-    // Generate realistic candlestick data with timeframe-specific behaviors
+    // Generate zigzag candlestick data with timeframe-specific behaviors
     let trendDirection = Math.random() > 0.5 ? 1 : -1; // Random initial direction
     let lastPrice = basePrice;
     let trendStrength = (Math.random() - 0.5) * trendStrengthRange; // Timeframe-specific range
-    let volatilityPhase = Math.random() * Math.PI * 2;
     let reversalCounter = 0;
+    let zigzagIntensity = (1 - trendPersistence) * 2.5; // Higher for choppy timeframes
+    let lastDirection = trendDirection; // Track last move direction for zigzag
     
     dataValues = Array.from({length: labels.length}, (_, i) => {
-      // Create wave patterns with timeframe-specific cycle length
-      const volatilityWave = Math.sin(volatilityPhase + i * (0.15 + Math.random() * 0.2)) * 0.5 + 0.5;
+      // Create ZIGZAG motion instead of smooth waves
+      // Zigzag: go up, then down, then up, alternating sharply
+      const zigzagPhase = (i % (cycleLength * 2)) / (cycleLength * 2); // 0 to 1 over full cycle
+      const isUpLeg = Math.floor((i / cycleLength)) % 2 === 0; // Alternate up and down legs
+      const legPosition = (i % cycleLength) / cycleLength; // Position within current leg (0 to 1)
       
-      // Adaptive trend based on timeframe-specific cycle
-      const cyclePosition = (i % cycleLength) / cycleLength;
-      const adaptiveTrend = Math.sin(cyclePosition * Math.PI * 2) * (0.15 + (1 - trendPersistence) * 0.3); // More volatile for low persistence
-      const trendFactor = trendDirection * (0.00008 + trendStrength + adaptiveTrend * 0.0003 + Math.random() * 0.0001);
+      // Zigzag direction changes (sharp reversals)
+      let zigzagDirection = trendDirection;
+      if (legPosition > 0.9) {
+        // Starting to reverse at end of leg
+        zigzagDirection *= -1;
+      }
       
-      // Volatility with timeframe-specific intensity
-      const baseVolatility = volatility * volatilityIntensity * (0.3 + volatilityWave);
-      const volatilityThreshold = 0.08 + (1 - trendPersistence) * 0.25; // Higher volatility for choppy timeframes
-      const volatilityFactor = Math.random() < volatilityThreshold
-        ? (Math.random() - 0.5) * baseVolatility * (0.008 + volatilityWave * 0.012)
-        : (Math.random() - 0.5) * baseVolatility * (0.003 + volatilityWave * 0.005);
+      // SHARP trend component for zigzag (not smooth)
+      const baseZigzagFactor = 0.0003 + (zigzagIntensity * 0.0002); // Much larger than before
+      const trendFactor = zigzagDirection * (baseZigzagFactor + Math.random() * 0.00008);
       
-      // Momentum with timeframe-specific persistence
-      const momentumPersistence = trendPersistence + (Math.random() - 0.5) * 0.15;
-      const momentum = Math.random() < momentumPersistence
-        ? (Math.random() - 0.3) * baseVolatility * (0.006 + volatilityWave * 0.004)
-        : (Math.random() - 0.5) * baseVolatility * (0.008 + volatilityWave * 0.006);
+      // Volatility concentrated at reversal points (zigzag peaks)
+      const distanceFromLegEnd = Math.abs(legPosition - 0.5); // 0 at middle, 1 at edges
+      const volatilityAtPeak = 1 - (distanceFromLegEnd * 2); // High at edges (turning points)
+      const volatilityMultiplier = 0.5 + volatilityAtPeak * (2 * zigzagIntensity);
       
-      // Apply movement
+      const baseVolatility = volatility * volatilityIntensity * volatilityMultiplier;
+      const volatilityFactor = (Math.random() - 0.5) * baseVolatility * (0.006 + volatilityAtPeak * 0.010);
+      
+      // Strong momentum during leg continuation, reversal at peaks
+      const momentumStrength = legPosition < 0.85 ? 0.75 : -0.85; // Strong continuation, then reversal prep
+      const momentum = (Math.random() - 0.3) * baseVolatility * (0.007 + volatilityAtPeak * 0.008) * momentumStrength;
+      
+      // Apply zigzag movement (sharper, more angular)
       lastPrice = lastPrice * (1 + trendFactor + volatilityFactor * 0.0001 + momentum * 0.0001);
       
-      // Adjust trend strength with timeframe-specific frequency
-      const adjustmentFrequency = timeframe === '1m' ? 1 : (timeframe === '5m' ? 2 : (timeframe === '15m' ? 3 : 4));
-      if (i % adjustmentFrequency === 0) {
-        const changeAmount = (Math.random() - 0.5) * (trendStrengthRange * 0.8);
-        trendStrength = Math.max(-trendStrengthRange, Math.min(trendStrengthRange, trendStrength + changeAmount));
-      }
-      
-      // Timeframe-specific trend reversals
-      reversalCounter++;
-      if (reversalCounter > (20 * (1 - reversalFrequency)) && Math.random() < reversalFrequency) {
+      // Reverse trend direction at leg boundaries
+      if (legPosition > 0.95 && Math.random() < 0.8) {
         trendDirection *= -1;
-        reversalCounter = 0;
       }
       
-      // Price bounds (wider for longer timeframes)
-      const priceRange = 0.3 + (trendPersistence * 0.2);
+      // Allow wider price ranges for zigzag
+      const priceRange = 0.3 + (trendPersistence * 0.25);
       return Math.max(basePrice * (1 - priceRange), Math.min(basePrice * (1 + priceRange), lastPrice));
     });
 
