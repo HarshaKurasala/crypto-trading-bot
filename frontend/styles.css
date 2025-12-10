@@ -684,6 +684,8 @@ body {
   font-weight:800; 
   color:var(--primary);
   letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  display: inline-block;
 }
 
 .price-change{ 
@@ -693,6 +695,7 @@ body {
   color:var(--primary); 
   font-weight:700;
   font-size: 12px;
+  transition: all 0.3s ease;
 }
 
 .price-change.negative{ 

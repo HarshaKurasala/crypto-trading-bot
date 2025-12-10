@@ -473,13 +473,21 @@ class TradingInterface {
     const low = data.low_24h || data.low24h || 0;
     const volume = data.volume_24h || data.volume24h || '0';
 
-    if (currentPrice) currentPrice.textContent = `$${parseFloat(price).toFixed(2)}`;
+    // Format numbers with commas for thousands
+    const formatPrice = (num) => {
+      return parseFloat(num).toLocaleString('en-US', { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2 
+      });
+    };
+
+    if (currentPrice) currentPrice.textContent = `$${formatPrice(price)}`;
     if (priceChange) {
       priceChange.textContent = `${change > 0 ? '+' : ''}${parseFloat(change).toFixed(2)}%`;
       priceChange.classList.toggle('negative', change < 0);
     }
-    if (high24h) high24h.textContent = `$${parseFloat(high).toFixed(2)}`;
-    if (low24h) low24h.textContent = `$${parseFloat(low).toFixed(2)}`;
+    if (high24h) high24h.textContent = `$${formatPrice(high)}`;
+    if (low24h) low24h.textContent = `$${formatPrice(low)}`;
     if (volume24h) volume24h.textContent = `${volume} ${this.currentSymbol.replace('USDT', '')}`;
   }
 
