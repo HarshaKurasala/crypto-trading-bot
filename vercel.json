@@ -1,23 +1,27 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
-    }
-  ],
+  "buildCommand": "npm run build",
+  "public": true,
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "api/index.py"
+      "src": "/(.*)",
+      "dest": "/index.html"
     },
     {
-      "src": "/(.*)",
-      "dest": "api/index.py"
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "src": "/(.*)\\.js",
+      "dest": "/$1.js"
+    },
+    {
+      "src": "/(.*)\\.css",
+      "dest": "/$1.css"
+    },
+    {
+      "src": "/(.*)\\.html",
+      "dest": "/$1.html"
     }
-  ],
-  "env": {
-    "PYTHONPATH": "/var/task"
-  },
-  "regions": ["iad1"]
+  ]
 }
