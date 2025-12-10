@@ -1,4 +1,24 @@
-// ===== CRYPTO TRADING BOT - Enhanced Frontend ===== 
+// ===== CRYPTO TRADING BOT - Enhanced Frontend =====
+
+// ===== BACKEND CONFIGURATION =====
+// Update this with your backend URL
+const BACKEND_CONFIG = {
+  // Change this to your backend Vercel URL when deployed
+  // Example: 'https://crypto-trading-bot-backend.vercel.app'
+  url: process.env.REACT_APP_BACKEND_URL || '/api',
+  // If empty, will use relative path '/api' (same domain)
+  // If set, will use absolute URL (separate backend)
+};
+
+// Helper function to build API URLs
+function getApiUrl(endpoint) {
+  const baseUrl = BACKEND_CONFIG.url;
+  if (baseUrl.startsWith('http')) {
+    return `${baseUrl}${endpoint}`;
+  }
+  return endpoint; // Use relative path for same-domain
+}
+
 class TradingInterface {
   constructor() {
     // State
@@ -416,7 +436,7 @@ class TradingInterface {
 
   async loadSymbolData() {
     try {
-      const response = await fetch(`/api/price/${this.currentSymbol}`);
+      const response = await fetch(getApiUrl(`/api/price/${this.currentSymbol}`));
       if (!response.ok) throw new Error('Failed to fetch price');
       
       const data = await response.json();
@@ -466,7 +486,7 @@ class TradingInterface {
 
   async loadOpenOrders() {
     try {
-      const response = await fetch(`/api/orders?symbol=${this.currentSymbol}`);
+      const response = await fetch(getApiUrl(`/api/orders?symbol=${this.currentSymbol}`));
       if (!response.ok) throw new Error('Failed to fetch orders');
       
       this.orders = await response.json();
@@ -499,7 +519,7 @@ class TradingInterface {
 
   async loadRecentTrades() {
     try {
-      const response = await fetch(`/api/trades/${this.currentSymbol}?limit=10`);
+      const response = await fetch(getApiUrl(`/api/trades/${this.currentSymbol}?limit=10`));
       if (!response.ok) throw new Error('Failed to fetch trades');
       
       this.trades = await response.json();
@@ -530,7 +550,7 @@ class TradingInterface {
 
   async loadAccountBalance() {
     try {
-      const response = await fetch('/api/account');
+      const response = await fetch(getApiUrl('/api/account'));
       if (!response.ok) throw new Error('Failed to fetch account');
       
       const data = await response.json();
@@ -742,7 +762,7 @@ class TradingInterface {
   // ===== CONNECTION & UPDATES =====
   async connectToBot() {
     try {
-      const response = await fetch('/api/status');
+      const response = await fetch(getApiUrl('/api/status'));
       if (response.ok) {
         this.setConnected(true);
       }
