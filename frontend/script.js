@@ -805,6 +805,11 @@ class TradingInterface {
   }
 
   startLiveUpdates() {
+    // Check connection every 5 seconds
+    setInterval(() => {
+      this.connectToBot();
+    }, 5000);
+    
     // Price updates every 2s
     this.priceUpdateInterval = setInterval(() => {
       this.loadSymbolData();

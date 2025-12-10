@@ -16,7 +16,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Bot status
-BOT_AVAILABLE = False
+BOT_AVAILABLE = True
 
 # ===== ROOT ROUTE =====
 
